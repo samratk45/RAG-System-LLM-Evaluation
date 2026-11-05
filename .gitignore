@@ -1,0 +1,19 @@
+# Secrets
+.env
+
+# Environments
+.venv/
+.venv-test/
+
+# Generated data
+faiss_index/
+data/session_*/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+requirements-lock.txt
+
+# Logs and per-run copies of uploaded files, at any depth
+logs/
+*.log
+session_*/

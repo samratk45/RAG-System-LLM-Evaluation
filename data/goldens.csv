@@ -1,0 +1,9 @@
+question,answer
+How many identical layers are stacked in the encoder of the base Transformer model?,The encoder is a stack of N = 6 identical layers.
+"How many parallel attention heads does the base Transformer use, and what is the dimension of each head's keys and values?","The base model uses h = 8 parallel attention heads, and each head has keys and values of dimension d_k = d_v = 64 (d_model = 512 divided by 8)."
+Why are the dot products scaled by 1/sqrt(d_k) in scaled dot-product attention?,"For large values of d_k the dot products grow large in magnitude, pushing the softmax into regions with extremely small gradients. Scaling by 1/sqrt(d_k) counteracts this."
+"How does the Transformer give the model information about word order, since it has no recurrence or convolution?",It adds positional encodings to the input embeddings at the bottom of the encoder and decoder stacks. The encodings are sine and cosine functions of different frequencies.
+What BLEU score did the big Transformer achieve on the WMT 2014 English-to-German translation task?,"The big Transformer achieved 28.4 BLEU, improving over the previous best results, including ensembles, by more than 2 BLEU."
+Which optimizer and learning-rate schedule were used to train the Transformer?,"The Adam optimizer with beta1 = 0.9, beta2 = 0.98 and epsilon = 1e-9, with a learning rate that increases linearly for the first 4000 warmup steps and then decreases proportionally to the inverse square root of the step number."
+What is the maximum path length between any two positions in a self-attention layer compared with a recurrent layer?,"In a self-attention layer any two positions are connected by a constant, O(1), path length, whereas a recurrent layer needs O(n) sequential operations."
+"What hardware was used to train the base Transformer models, and for how long?","They were trained on one machine with 8 NVIDIA P100 GPUs; each base model trained for 100,000 steps, about 12 hours."

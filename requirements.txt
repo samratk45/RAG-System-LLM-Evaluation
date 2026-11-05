@@ -1,0 +1,29 @@
+# Config and logging
+python-dotenv==1.1.1
+structlog==26.1.0
+
+# LangChain (all on the 0.3 line, so keep these versions together)
+langchain==0.3.27
+langchain-core==0.3.72
+langchain-community==0.3.27
+langchain-text-splitters==0.3.9
+langchain-groq==0.3.6
+langchain-huggingface==0.3.1
+langchain-google-genai==2.1.8
+langsmith==0.14.17
+
+# Embeddings, vector store, document loading
+sentence-transformers==6.2.0
+faiss-cpu==1.15.1
+pypdf==6.21.4
+docx2txt==0.9
+
+# Web app
+fastapi==0.115.6
+uvicorn==0.32.1
+Jinja2==3.1.4
+python-multipart==0.0.20
+
+# Evaluation and notebooks
+pandas==3.1.0
+ipykernel==6.30.0
