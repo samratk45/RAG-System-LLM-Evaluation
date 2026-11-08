@@ -35,7 +35,7 @@ class ApiKeyManager:
                 if env_val:
                     self.api_keys[key] = env_val
 
-        # Log which keys exist, never any part of the key itself
+        
         log.info("API keys available", keys=sorted(k for k, v in self.api_keys.items() if v))
 
     def get(self, key: str) -> str:
@@ -87,7 +87,7 @@ class ModelLoader:
 
                 return GoogleGenerativeAIEmbeddings(
                     model=model_name,
-                    google_api_key=self.api_key_mgr.get("GOOGLE_API_KEY"),  # type: ignore
+                    google_api_key=self.api_key_mgr.get("GOOGLE_API_KEY"),  
                 )
 
             raise ValueError(f"Unsupported embedding provider: {provider}")
@@ -148,13 +148,13 @@ class ModelLoader:
 if __name__ == "__main__":
     loader = ModelLoader()
 
-    # Test Embedding
+    
     embeddings = loader.load_embeddings()
     print(f"Embedding Model Loaded: {embeddings}")
     result = embeddings.embed_query("Hello, how are you?")
     print(f"Embedding dimensions: {len(result)}")
 
-    # Test LLM
+    
     llm = loader.load_llm()
     print(f"LLM Loaded: {llm}")
     result = llm.invoke("Hello, how are you?")

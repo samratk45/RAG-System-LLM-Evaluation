@@ -1,7 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-# Rewrites a follow-up like "what is the full form of it" into a standalone question
-# using the chat history, so retrieval searches for the right thing.
+
 contextualize_question_prompt = ChatPromptTemplate.from_messages([
     ("system", (
         "Given the conversation history and the user's latest message, rewrite the latest message as a "
@@ -17,7 +16,7 @@ contextualize_question_prompt = ChatPromptTemplate.from_messages([
     ("human", "{input}"),
 ])
 
-# Answers using only the retrieved context.
+
 context_qa_prompt = ChatPromptTemplate.from_messages([
     ("system", (
         "You are an assistant that answers questions about the user's uploaded documents.\n\n"
@@ -39,7 +38,6 @@ context_qa_prompt = ChatPromptTemplate.from_messages([
     ("human", "{input}"),
 ])
 
-# Central dictionary to register prompts
 PROMPT_REGISTRY = {
     "contextualize_question": contextualize_question_prompt,
     "context_qa": context_qa_prompt,

@@ -3,7 +3,7 @@ import os
 import yaml
 
 def _project_root() -> Path:
-    # .../utils/config_loader.py -> parents[1] == project root
+    
     return Path(__file__).resolve().parents[1]
 
 def load_config(config_path: str | None = None) -> dict:
@@ -13,7 +13,7 @@ def load_config(config_path: str | None = None) -> dict:
     """
     env_path = os.getenv("CONFIG_PATH")
     if config_path is None:
-        # _project_root() already points to the package root (multi_doc_chat)
+       
         config_path = env_path or str(_project_root() / "config" / "config.yaml")
 
     path = Path(config_path)

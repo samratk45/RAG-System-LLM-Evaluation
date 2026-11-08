@@ -5,22 +5,22 @@ from pathlib import Path
 from typing import Iterable, List
 from multi_doc.logger import GLOBAL_LOGGER as log
 from multi_doc.exception.custom_exception import DocumentPortalException
-from multi_doc.utils.document_ops import SUPPORTED_EXTENSIONS  # single source of truth
+from multi_doc.utils.document_ops import SUPPORTED_EXTENSIONS  
 
 MAX_FILE_MB = 25
 
 
 def _read_bytes(uf) -> bytes:
     """Read the raw bytes from a Starlette UploadFile, a file-like object, or an adapter."""
-    # Starlette UploadFile exposes the underlying buffer as .file
+   
     if hasattr(uf, "file") and hasattr(uf.file, "read"):
         if hasattr(uf.file, "seek"):
-            uf.file.seek(0)  # the stream may already have been read once
+            uf.file.seek(0)  
         data = uf.file.read()
     elif hasattr(uf, "read"):
         data = uf.read()
     else:
-        # Adapter objects (e.g. FastAPIFileAdapter) expose getbuffer()
+        
         buf = getattr(uf, "getbuffer", None)
         if not callable(buf):
             raise ValueError("Unsupported uploaded file object; no readable interface")
@@ -37,7 +37,6 @@ def save_uploaded_files(uploaded_files: Iterable, target_dir: Path) -> List[Path
         target_dir.mkdir(parents=True, exist_ok=True)
         saved: List[Path] = []
         for uf in uploaded_files:
-            # Starlette UploadFile has .filename; generic objects have .name
             name = getattr(uf, "filename", None) or getattr(uf, "name", "file")
             ext = Path(name).suffix.lower()
             if ext not in SUPPORTED_EXTENSIONS:

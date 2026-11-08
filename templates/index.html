@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>MultiDocChat</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e7490'/%3E%3Cpath d='M10 9h12M10 16h12M10 23h7' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    let sessionId = localStorage.getItem('mdc_session_id') || '';
+
+    async function uploadFiles(evt) {
+      evt.preventDefault();
+      const input = $('#file-input');
+      const files = input.files;
+      if (!files || files.length === 0) {
+        toast('Please choose at least one file');
+        return;
+      }
+      toggleIndexing(true);
+      try {
+        const fd = new FormData();
+        for (const f of files) fd.append('files', f);
+        const res = await fetch('/upload', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Upload failed');
+        const data = await res.json();
+        sessionId = data.session_id;
+        localStorage.setItem('mdc_session_id', sessionId);
+        $('#chat').style.display = 'block';
+        toast('Indexing complete. You can chat now.');
+      } catch (e) {
+        console.error(e);
+        toast('Indexing failed. Try re-uploading.');
+      } finally {
+        toggleIndexing(false);
+      }
+    }
+
+    async function sendMessage() {
+      const input = $('#message-input');
+      const text = input.value.trim();
+      if (!sessionId) { toast('Please upload documents first.'); return; }
+      if (!text) { return; }
+      appendMessage('user', text);
+      input.value = '';
+      toggleThinking(true);
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId, message: text })
+        });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Chat failed');
+        const data = await res.json();
+        appendMessage('assistant', data.answer);
+      } catch (e) {
+        console.error(e);
+        toast('Thinking failed. Try again.');
+      } finally {
+        toggleThinking(false);
+      }
+    }
+
+    function appendMessage(role, text) {
+      const container = $('#messages');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble ' + (role === 'user' ? 'user' : 'assistant');
+      bubble.textContent = text;
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function toggleIndexing(on) {
+      $('#upload-btn').disabled = on;
+      $('#indexing').style.display = on ? 'inline-block' : 'none';
+    }
+
+    function toggleThinking(on) {
+      $('#send-btn').disabled = on;
+      $('#thinking').style.display = on ? 'inline-block' : 'none';
+    }
+
+    function toast(msg) {
+      const el = $('#toast');
+      el.textContent = msg;
+      el.style.opacity = '1';
+      setTimeout(() => el.style.opacity = '0', 2500);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (sessionId) {
+        $('#chat').style.display = 'block';
+      }
+      $('#upload-form').addEventListener('submit', uploadFiles);
+      $('#send-btn').addEventListener('click', sendMessage);
+      $('#message-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+      });
+      const drop = $('#dropzone');
+      drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('hover'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('hover'));
+      drop.addEventListener('drop', (e) => {
+        e.preventDefault();
+        drop.classList.remove('hover');
+        $('#file-input').files = e.dataTransfer.files;
+      });
+    });
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+        </span>
+        <div>
+          <h1>MultiDocChat</h1>
+          <p>Ask questions across your documents</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section id="uploader" class="card" aria-labelledby="uploader-title">
+      <div class="card-head">
+        <h2 id="uploader-title">Documents</h2>
+        <p>Upload the files you want to search. Supported: PDF, DOCX, TXT and MD.</p>
+      </div>
+      <form id="upload-form">
+        <div id="dropzone">
+          <svg class="dz-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <p class="dz-title">Drag and drop files here</p>
+          <p class="dz-sub">or select them from your computer</p>
+          <input id="file-input" class="visually-hidden" type="file" name="files" multiple />
+          <label class="btn btn-secondary" for="file-input">Choose files</label>
+        </div>
+        <div class="actions">
+          <button id="upload-btn" class="btn btn-primary" type="submit">Upload and index</button>
+          <span id="indexing" class="status" role="status">Indexing…</span>
+        </div>
+      </form>
+    </section>
+
+    <section id="chat" class="card" aria-labelledby="chat-title">
+      <div class="card-head">
+        <h2 id="chat-title">Conversation</h2>
+        <p>Answers are based on the documents you uploaded.</p>
+      </div>
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <div class="composer">
+        <textarea id="message-input" rows="2" aria-label="Message" placeholder="Ask about your documents…"></textarea>
+        <button id="send-btn" class="btn btn-primary" type="button">Send</button>
+      </div>
+      <div class="composer-foot">
+        <span class="hint">Press Enter to send, Shift and Enter for a new line.</span>
+        <span id="thinking" class="status" role="status">Thinking…</span>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

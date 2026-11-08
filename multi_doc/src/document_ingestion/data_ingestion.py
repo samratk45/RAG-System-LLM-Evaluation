@@ -58,7 +58,7 @@ class ChatIngestor:
 
     def _resolve_dir(self, base: Path):
         if self.use_session:
-            d = base / self.session_id  # e.g. "faiss_index/session_..."
+            d = base / self.session_id  
             d.mkdir(parents=True, exist_ok=True)
             return d
         return base
@@ -67,7 +67,7 @@ class ChatIngestor:
         splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         chunks = splitter.split_documents(docs)
 
-        # Drop tiny noise chunks (stray headings, table separators, page numbers)
+        
         min_chars = self.cfg.get("chunking", {}).get("min_chunk_chars", 100)
         chunks = [c for c in chunks if len(c.page_content.strip()) >= min_chars]
 
@@ -86,7 +86,7 @@ class ChatIngestor:
         lambda_mult: Optional[float] = None,
     ):
         try:
-            # Anything not passed in falls back to config.yaml, then to a safe default
+           
             ch_cfg = self.cfg.get("chunking", {})
             rt_cfg = self.cfg.get("retriever", {})
             chunk_size = chunk_size or ch_cfg.get("chunk_size", 750)
@@ -112,13 +112,13 @@ class ChatIngestor:
 
             vs = fm.load_or_create(texts=texts, metadatas=metas)
 
-            # Adds only chunks not already in the index (no-op right after a fresh create)
+            
             added = fm.add_documents(chunks)
             log.info("FAISS index updated", added=added, index=str(self.faiss_dir))
 
             search_kwargs: Dict[str, Any] = {"k": k}
             if search_type == "mmr":
-                # MMR needs fetch_k (docs to fetch) and lambda_mult (diversity parameter)
+                
                 search_kwargs["fetch_k"] = max(fetch_k, k)  # fetch_k must be >= k
                 search_kwargs["lambda_mult"] = lambda_mult
                 log.info("Using MMR search", k=k, fetch_k=search_kwargs["fetch_k"], lambda_mult=lambda_mult)
@@ -129,14 +129,13 @@ class ChatIngestor:
             log.error("Failed to build retriever", error=str(e))
             raise DocumentPortalException("Failed to build retriever", e) from e
 
-    # Correctly spelled alias so new code can use it; old callers keep working
     build_retriever = built_retriver
 
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}  # .md added; make sure document_ops.load_documents handles it
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}  
 
 
-# FAISS Manager (load-or-create)
+
 class FaissManager:
     def __init__(self, index_dir: Path, model_loader: Optional[ModelLoader] = None):
         self.index_dir = Path(index_dir)
@@ -162,8 +161,7 @@ class FaissManager:
 
     @staticmethod
     def _fingerprint(text: str, md: Dict[str, Any]) -> str:
-        # Source + content hash. The old source::row_id key was identical for every chunk
-        # of the same file, so only one chunk per file was ever indexed.
+       
         src = md.get("source") or md.get("file_path") or ""
         rid = md.get("row_id")
         content_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]

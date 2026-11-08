@@ -17,7 +17,7 @@ def _loader_for(p: Path):
     if ext == ".docx":
         return Docx2txtLoader(str(p))
     if ext in {".txt", ".md"}:
-        # utf-8-sig strips the BOM (\ufeff) that Windows editors often add
+       
         return TextLoader(str(p), encoding="utf-8-sig")
     return None
 
@@ -45,14 +45,14 @@ def load_documents(paths: Iterable[Path]) -> List[Document]:
                 failed.append(p.name)
                 continue
 
-            # Drop empty pages (common with scanned PDFs that have no text layer)
+            
             loaded = [d for d in loaded if d.page_content and d.page_content.strip()]
             if not loaded:
                 log.warning("No extractable text in file", path=str(p))
                 failed.append(p.name)
                 continue
 
-            # Keep the file name in metadata so answers can cite their source
+           
             for d in loaded:
                 d.metadata["filename"] = p.name
             docs.extend(loaded)

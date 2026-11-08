@@ -17,52 +17,43 @@ from multi_doc.src.document_chat.retrieval import ConversationalRAG
 from multi_doc.src.document_ingestion.data_ingestion import ChatIngestor
 from multi_doc.utils.document_ops import SUPPORTED_EXTENSIONS
 
-# ----------------------------
-# Settings
-# ----------------------------
+
 DATA_BASE = "data"
 FAISS_BASE = "faiss_index"
 MAX_FILES_PER_UPLOAD = 10
-MAX_HISTORY_MESSAGES = 10  # last 5 question/answer pairs are sent back to the model
+MAX_HISTORY_MESSAGES = 10  
 
-# The UI is served by this same app, so CORS is only needed if you host a separate frontend.
-# Set CORS_ORIGINS="https://my-frontend.com,http://localhost:3000" to allow specific origins.
+
 ALLOWED_ORIGINS = [
     o.strip()
     for o in os.getenv("CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",")
     if o.strip()
 ]
 
-# ----------------------------
-# FastAPI initialization
-# ----------------------------
+
 app = FastAPI(title="MultiDocChat", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=False,  # "*" together with credentials is not a valid CORS setup
+    allow_credentials=False,  
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
-# Static and templates
 BASE_DIR = Path(__file__).resolve().parent
 static_dir = BASE_DIR / "static"
 templates_dir = BASE_DIR / "templates"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 templates = Jinja2Templates(directory=str(templates_dir))
 
-# ----------------------------
-# In-memory state (fine for one server process)
-# ----------------------------
-HISTORY: Dict[str, List[BaseMessage]] = {}  # chat history per session
-RAGS: Dict[str, ConversationalRAG] = {}  # one ready-to-use RAG chain per session
 
 
-# ----------------------------
-# Adapters
-# ----------------------------
+HISTORY: Dict[str, List[BaseMessage]] = {}  
+RAGS: Dict[str, ConversationalRAG] = {}  
+
+
+
 class FastAPIFileAdapter:
     """Adapt FastAPI UploadFile to a simple object with .name and .getbuffer()."""
 
@@ -75,9 +66,7 @@ class FastAPIFileAdapter:
         return self._uf.file.read()
 
 
-# ----------------------------
-# Models
-# ----------------------------
+
 class UploadResponse(BaseModel):
     session_id: str
     indexed: bool
@@ -85,7 +74,7 @@ class UploadResponse(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    # session_id becomes a folder name (faiss_index/<session_id>), so only safe characters are allowed
+    
     session_id: str = Field(pattern=r"^[A-Za-z0-9_\-]{1,64}$")
     message: str = Field(min_length=1, max_length=2000)
 
@@ -94,9 +83,7 @@ class ChatResponse(BaseModel):
     answer: str
 
 
-# ----------------------------
-# Helpers
-# ----------------------------
+
 def _session_exists(session_id: str) -> bool:
     """A session is valid if it is in memory OR its index is still on disk (survives server restarts)."""
     return session_id in HISTORY or (Path(FAISS_BASE) / session_id / "index.faiss").exists()
@@ -107,17 +94,13 @@ def _get_rag(session_id: str) -> ConversationalRAG:
     rag = RAGS.get(session_id)
     if rag is None:
         rag = ConversationalRAG(session_id=session_id)
-        # k, search type, fetch_k and lambda_mult come from config.yaml
+        
         rag.load_retriever_from_faiss(index_path=str(Path(FAISS_BASE) / session_id))
         RAGS[session_id] = rag
     return rag
 
 
-# ----------------------------
-# Routes
-# ----------------------------
-# The upload and chat endpoints are plain `def` (not `async def`) on purpose: embedding and LLM calls
-# are blocking, and FastAPI runs `def` endpoints in a thread pool so they don't freeze the whole server.
+
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
@@ -144,11 +127,10 @@ def upload(files: List[UploadFile] = File(...)) -> UploadResponse:
 
     try:
         ingestor = ChatIngestor(temp_base=DATA_BASE, faiss_base=FAISS_BASE, use_session_dirs=True)
-        # Save, load, split, embed and write the FAISS index (chunking and retriever settings come from config.yaml)
         ingestor.built_retriver([FastAPIFileAdapter(f) for f in files])
         session_id = ingestor.session_id
     except DocumentPortalException as e:
-        log.error("Upload failed", error=str(e))  # full details stay in the server log, not in the response
+        log.error("Upload failed", error=str(e))   
         raise HTTPException(
             status_code=422,
             detail="Could not process the uploaded files. Make sure they contain readable text.",
@@ -182,16 +164,16 @@ def chat(req: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=500, detail="Something went wrong.")
 
     history.extend([HumanMessage(content=message), AIMessage(content=answer)])
-    del history[:-MAX_HISTORY_MESSAGES]  # keep only the most recent messages
+    del history[:-MAX_HISTORY_MESSAGES]  
 
     return ChatResponse(answer=answer)
 
 
-# Uvicorn entrypoint for `python main.py` (optional)
+
 if __name__ == "__main__":
     import uvicorn
 
-    # 127.0.0.1 = only this computer can connect. Use HOST=0.0.0.0 only when you want other devices to reach it.
+    
     uvicorn.run(
         "main:app",
         host=os.getenv("HOST", "127.0.0.1"),
