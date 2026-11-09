@@ -11,6 +11,7 @@ data/session_*/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+.pytest_cache/
 requirements-lock.txt
 
 # Logs and per-run copies of uploaded files, at any depth

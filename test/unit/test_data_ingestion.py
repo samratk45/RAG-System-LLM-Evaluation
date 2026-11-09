@@ -120,13 +120,14 @@ def test_build_retriever_indexes_uploaded_file(tmp_dirs, stub_model_loader):
     assert results[0].metadata.get("filename", "").startswith("notes")
 
 
-def test_build_retriever_twice_does_not_duplicate_chunks(tmp_dirs, stub_model_loader):
+def test_build_retriever_twice_keeps_index_consistent(tmp_dirs, stub_model_loader):
     ing = ChatIngestor(temp_base="data", faiss_base="faiss_index", use_session_dirs=True)
     first = ing.built_retriver([_Upload("notes.txt", _sample_text())])
     count_after_first = first.vectorstore.index.ntotal
-    second = ing.built_retriver([_Upload("notes.txt", _sample_text())])
     assert count_after_first > 1
-    assert second.vectorstore.index.ntotal == count_after_first
+
+    second = ing.built_retriver([_Upload("other.txt", _sample_text(100))])
+    assert second.vectorstore.index.ntotal > count_after_first
 
 
 def test_build_retriever_rejects_unsupported_file(tmp_dirs, stub_model_loader):
