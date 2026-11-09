@@ -1,0 +1,63 @@
+{
+  "family": "docquery-td",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "arn:aws:iam::833823556006:role/ecsTaskExecutionRole",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "4096",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "docquery-container",
+      "image": "833823556006.dkr.ecr.ap-southeast-2.amazonaws.com/docquery",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp",
+          "name": "docquery-container-8080-tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "environment": [
+        { "name": "ENV", "value": "production" },
+        { "name": "LLM_PROVIDER", "value": "groq" },
+        { "name": "LANGCHAIN_TRACING_V2", "value": "true" },
+        { "name": "LANGCHAIN_PROJECT", "value": "RAG_Chat_model" }
+      ],
+      "secrets": [
+        {
+          "name": "GROQ_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:ap-southeast-2:833823556006:secret:docquery-secrets-SKO1qg:GROQ_API_KEY::"
+        },
+        {
+          "name": "LANGCHAIN_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:ap-southeast-2:833823556006:secret:docquery-secrets-SKO1qg:LANGCHAIN_API_KEY::"
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')\" || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/docquery",
+          "awslogs-region": "ap-southeast-2",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}
